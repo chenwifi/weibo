@@ -1,0 +1,72 @@
+how to design k-v in redis
+
+user
+
+incr global:userid
+set user:userid:1:username zhangsan
+set user:userid:1:password 111111
+
+for logining...
+set user:username:zhangsan:userid 1
+
+
+
+post
+
+/*the first verson
+incr global:postid
+set post:pid:1:userid 1
+set post:pid:1:time time
+set post:pid:1:content content
+*/
+
+the second verson
+incr global:postid
+hmset post:pid:1 userid 1 time time(),content content username username
+
+
+if a follow b,what happen?
+
+sadd following:a b
+sadd follower:b a
+
+/*
+when you update a thought ,the system should push your message to your fans.
+
+lpush recivepost.$fansid,$postid
+*/
+
+/*the second verson:the client shoule pull the message from their fans*/
+
+//when you update a thought
+zadd user:userid:1:post postid postid
+if(zcard(user:userid:1:post)>20){
+    zremrangebyrank user:userid:1:post 0 0
+}
+
+//in home.php
+
+get lastpullid 
+if not lastpullpid=0
+
+smember folloing:userid + myself userid
+foreach{
+list = merge(zrangebyscore user:userid:*:post lastpullid+1 +inf(global:postid))
+}
+sort(list);
+
+if(not empty list){
+    set lastpullpid end(list)
+}
+
+lpush('recivepost:'.userid)
+ltrim('recivepost:'.userid,0,999);
+
+foreach{
+hget(post:postid:list)
+}
+
+ 
+
+
+
